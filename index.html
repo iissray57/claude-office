@@ -92,6 +92,31 @@
   #picker .pk-list .up { color:#8b93b5; }
   #picker .pk-foot { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; gap:8px; }
   #picker .pk-foot #pkNote { font-size:11px; color:#8b93b5; } #picker .pk-foot #pkNote.good { color:#4ade80; }
+  #settings .animal-row { display:flex; align-items:center; gap:8px; margin-top:6px; }
+  #settings .animal-row button { background:#1c2140; color:#c7cde6; border:1px solid #2c3154; padding:6px 12px; }
+  #settings .animal-row .sum { font-size:11.5px; color:#8b93b5; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #animalPick { position:fixed; inset:0; z-index:40; display:none; background:rgba(5,6,12,.6); align-items:center; justify-content:center; }
+  #animalPick .box { width:min(440px, 92vw); background:#141830; border:1px solid #2c3154; border-radius:12px; color:#e6e8f0; box-shadow:0 12px 40px rgba(0,0,0,.6); display:flex; flex-direction:column; }
+  #animalPick .ap-head { display:flex; justify-content:space-between; align-items:center; padding:12px 16px 8px; }
+  #animalPick .ap-head h2 { font-size:15px; } #animalPick .ap-head .desc { font-size:11px; color:#8b93b5; margin-top:2px; }
+  #animalPick .ap-head button { background:none; border:none; color:#8b93b5; cursor:pointer; font-size:16px; }
+  #animalPick .ap-tools { display:flex; gap:6px; padding:0 16px 8px; align-items:center; }
+  #animalPick .ap-tools input { flex:1; background:#0f1222; border:1px solid #2c3154; color:#e6e8f0; border-radius:6px; padding:5px 8px; font-size:12px; }
+  #animalPick .ap-tools button { background:#1c2140; color:#c7cde6; border:1px solid #2c3154; border-radius:5px; padding:4px 8px; font-size:11.5px; cursor:pointer; white-space:nowrap; }
+  #animalPick .ap-list { height:320px; overflow-y:auto; border-top:1px solid #2c3154; border-bottom:1px solid #2c3154; background:#0f1222; }
+  #animalPick .ap-list::-webkit-scrollbar { width:8px; } #animalPick .ap-list::-webkit-scrollbar-thumb { background:#2c3154; border-radius:4px; }
+  #animalPick .ap-row { display:flex; align-items:center; gap:10px; padding:6px 14px; border-bottom:1px solid #161a30; cursor:pointer; }
+  #animalPick .ap-row:hover { background:#1c2140; } #animalPick .ap-row.on { background:#18203f; }
+  #animalPick .ap-row input[type=checkbox] { width:15px; height:15px; accent-color:#4f83e0; cursor:pointer; }
+  #animalPick .ap-row .nm { flex:1; font-size:13px; } #animalPick .ap-row .nm small { color:#8b93b5; font-size:11px; margin-left:6px; }
+  #animalPick .ap-row .cnt { display:flex; align-items:center; gap:2px; opacity:.35; pointer-events:none; }
+  #animalPick .ap-row.on .cnt { opacity:1; pointer-events:auto; }
+  #animalPick .ap-row .cnt button { width:22px; height:22px; border:1px solid #2c3154; background:#1c2140; color:#e6e8f0; border-radius:5px; cursor:pointer; font-size:13px; line-height:1; }
+  #animalPick .ap-row .cnt span { width:22px; text-align:center; font-size:13px; font-weight:700; }
+  #animalPick .ap-foot { display:flex; justify-content:space-between; align-items:center; padding:10px 16px 14px; gap:8px; font-size:12px; color:#8b93b5; }
+  #animalPick .ap-foot .btns { display:flex; gap:8px; }
+  #animalPick .ap-foot button { border:none; border-radius:6px; padding:7px 14px; font-size:13px; cursor:pointer; }
+  #animalPick .ap-foot .save { background:#4f83e0; color:#fff; font-weight:700; } #animalPick .ap-foot .cancel { background:#2c3154; color:#e6e8f0; }
   #hint { position:fixed; bottom:6px; left:0; right:0; text-align:center; font-size:11px; color:#59617f; z-index:10; pointer-events:none; }
 </style>
 </head>
@@ -129,6 +154,8 @@
     </div>
     <label>이동 속도 (이 브라우저에만 저장) — <span id="cfgSpeedVal">1.0×</span></label>
     <input id="cfgSpeed" type="range" min="0.25" max="4" step="0.25" value="1" style="padding:0">
+    <label>사무실 동물 (이 브라우저에만 저장)</label>
+    <div class="animal-row"><button type="button" id="cfgAnimals">🐾 동물 고르기…</button><span class="sum" id="cfgAnimalsSum"></span></div>
     <div class="grid">
       <div><label>최대 세션 수</label><input id="cfgMax" type="number" min="1" max="40"></div>
       <div><label>에이전트 활성 기준(초)</label><input id="cfgAgent" type="number" min="10" max="3600"></div>
@@ -138,6 +165,14 @@
     <input id="cfgPort" type="number" min="1024" max="65535">
     <div class="note" id="cfgMsg"></div>
     <div class="btns"><button class="cancel" id="cfgCancel">취소</button><button class="save" id="cfgSave">저장</button></div>
+  </div>
+</div>
+<div id="animalPick">
+  <div class="box">
+    <div class="ap-head"><div><h2>🐾 사무실 동물 고르기</h2><div class="desc">체크한 동물이 복도를 돌아다닙니다. 종류별로 1~5마리까지.</div></div><button type="button" id="apClose">✕</button></div>
+    <div class="ap-tools"><input id="apSearch" placeholder="검색 (예: 고양이, 새)" spellcheck="false"><button type="button" id="apAll">모두 1마리</button><button type="button" id="apNone">모두 해제</button></div>
+    <div class="ap-list" id="apList"></div>
+    <div class="ap-foot"><span id="apSum"></span><div class="btns"><button type="button" class="cancel" id="apCancel">취소</button><button type="button" class="save" id="apApply">적용</button></div></div>
   </div>
 </div>
 <div id="stage"><canvas id="game"></canvas></div>
@@ -613,20 +648,88 @@ function managerVisit(m, w) {   // 관리자가 특정 직원 자리로 가서 �
 }
 function updateBoss(dt) { for (const m of MANAGERS) updateManager(m, dt); }
 
-/* ================= 고양이 ================= */
-const cat = { x: 300, y: 200, tx: 300, ty: 200, sit: 0, tailT: 0 };
-function updateCat(dt) {
-  cat.tailT += dt * 4;
-  if (cat.sit > 0) { cat.sit -= dt; return; }
-  const dx = cat.tx - cat.x, dy = cat.ty - cat.y;
+/* ================= 동물 (30종, 종별 마릿수는 설정에서) ================= */
+/* body: 몸통색, dark: 어두운색, ears: point|round|long|none, tail: cat|short|bushy|curl|none, legs: 2|4|0, fly: 날아다님, sc: 크기배율, extra: 추가 픽셀 */
+const SPECIES = [
+  { id:'cat',      name:'고양이',   emoji:'🐱', body:'#e8a33d', dark:'#c98a2e', ears:'point', tail:'cat',   legs:4, speed:22, say:'냐옹' },
+  { id:'dog',      name:'강아지',   emoji:'🐶', body:'#d9b27c', dark:'#a8834f', ears:'flop',  tail:'curl',  legs:4, speed:30, say:'멍!' },
+  { id:'rabbit',   name:'토끼',     emoji:'🐰', body:'#f4f1ec', dark:'#cfc8bf', ears:'long',  tail:'short', legs:4, speed:34, say:'깡총' },
+  { id:'hamster',  name:'햄스터',   emoji:'🐹', body:'#e9c48a', dark:'#c39a5c', ears:'round', tail:'none',  legs:4, speed:26, say:'찍', sc:.8 },
+  { id:'turtle',   name:'거북이',   emoji:'🐢', body:'#7fae5a', dark:'#4f7a36', ears:'none',  tail:'short', legs:4, speed:7,  say:'…', extra:(p)=>{ p(-4,-4,8,3,'#5f8a3e'); p(-3,-5,6,1,'#5f8a3e'); p(-2,-4,2,2,'#7fae5a'); p(1,-4,2,2,'#7fae5a'); } },
+  { id:'parrot',   name:'앵무새',   emoji:'🦜', body:'#3ec26a', dark:'#2b8f4b', ears:'none',  tail:'short', legs:2, speed:40, say:'안녕!', fly:true, extra:(p)=>{ p(-3,-1,6,2,'#e5484d'); p(8,-4,2,1,'#f0b23f'); p(-5,-3,2,1,'#3d7be0'); } },
+  { id:'chick',    name:'병아리',   emoji:'🐥', body:'#ffd83d', dark:'#e0b41f', ears:'none',  tail:'none',  legs:2, speed:24, say:'삐약', sc:.75, extra:(p)=>{ p(8,-4,2,1,'#f08a24'); } },
+  { id:'duck',     name:'오리',     emoji:'🦆', body:'#f5f0dc', dark:'#d7cfb4', ears:'none',  tail:'short', legs:2, speed:20, say:'꽥', extra:(p)=>{ p(8,-4,3,1,'#f0a024'); p(3,-6,4,1,'#2e7d4f'); } },
+  { id:'penguin',  name:'펭귄',     emoji:'🐧', body:'#2a2f45', dark:'#151827', ears:'none',  tail:'none',  legs:2, speed:16, say:'뒤뚱', extra:(p)=>{ p(-2,-1,5,4,'#f4f1ec'); p(8,-4,2,1,'#f0a024'); } },
+  { id:'fox',      name:'여우',     emoji:'🦊', body:'#e6702e', dark:'#b8511c', ears:'point', tail:'bushy', legs:4, speed:32, say:'킁킁', extra:(p)=>{ p(-1,0,4,2,'#f6e9d8'); } },
+  { id:'panda',    name:'판다',     emoji:'🐼', body:'#f4f1ec', dark:'#1c1c28', ears:'round', tail:'none',  legs:4, speed:12, say:'우물우물', sc:1.15, extra:(p)=>{ p(-4,0,9,2,'#1c1c28'); p(3,-4,1,1,'#1c1c28'); p(6,-4,1,1,'#1c1c28'); } },
+  { id:'bear',     name:'곰',       emoji:'🐻', body:'#8a5a34', dark:'#5e3b1f', ears:'round', tail:'none',  legs:4, speed:14, say:'그르릉', sc:1.3 },
+  { id:'koala',    name:'코알라',   emoji:'🐨', body:'#9aa0a8', dark:'#6b7079', ears:'round', tail:'none',  legs:4, speed:8,  say:'zzZ', extra:(p)=>{ p(6,-3,2,1,'#2b2b33'); } },
+  { id:'pig',      name:'돼지',     emoji:'🐷', body:'#f5b0c0', dark:'#d98aa0', ears:'point', tail:'curl',  legs:4, speed:16, say:'꿀꿀', sc:1.1, extra:(p)=>{ p(7,-3,2,1,'#e8899f'); } },
+  { id:'sheep',    name:'양',       emoji:'🐑', body:'#f7f5f0', dark:'#dcd7cc', ears:'flop',  tail:'short', legs:4, speed:14, say:'메에', extra:(p)=>{ p(3,-5,5,4,'#3a3a45'); p(4,-4,1,1,'#fff'); p(6,-4,1,1,'#fff'); p(-4,-3,8,1,'#fff'); } },
+  { id:'cow',      name:'소',       emoji:'🐄', body:'#f4f1ec', dark:'#2b2b33', ears:'flop',  tail:'short', legs:4, speed:12, say:'음머', sc:1.3, extra:(p)=>{ p(-3,-1,3,2,'#2b2b33'); p(1,0,2,2,'#2b2b33'); p(7,-2,2,1,'#e8a3b0'); } },
+  { id:'horse',    name:'말',       emoji:'🐴', body:'#a56a3a', dark:'#6e4522', ears:'point', tail:'bushy', legs:4, speed:44, say:'히힝', sc:1.3, extra:(p)=>{ p(2,-6,4,1,'#3a2314'); } },
+  { id:'deer',     name:'사슴',     emoji:'🦌', body:'#c9915a', dark:'#946538', ears:'point', tail:'short', legs:4, speed:36, say:'…', sc:1.15, extra:(p)=>{ p(3,-8,1,3,'#6e4a2c'); p(7,-8,1,3,'#6e4a2c'); p(2,-8,1,1,'#6e4a2c'); p(8,-8,1,1,'#6e4a2c'); } },
+  { id:'squirrel', name:'다람쥐',   emoji:'🐿️', body:'#b06a3a', dark:'#7c4522', ears:'point', tail:'bushy', legs:4, speed:38, say:'도토리!', sc:.85 },
+  { id:'hedgehog', name:'고슴도치', emoji:'🦔', body:'#c9a173', dark:'#5a4633', ears:'none',  tail:'none',  legs:4, speed:12, say:'꼬물', sc:.85, extra:(p)=>{ for (let i=-4;i<4;i+=2) p(i,-4,1,2,'#5a4633'); p(-4,-3,8,2,'#7a6247'); } },
+  { id:'frog',     name:'개구리',   emoji:'🐸', body:'#5fc06a', dark:'#3b8f45', ears:'none',  tail:'none',  legs:4, speed:18, say:'개굴', sc:.85, extra:(p)=>{ p(3,-6,2,2,'#5fc06a'); p(6,-6,2,2,'#5fc06a'); p(4,-6,1,1,'#1c1c28'); p(7,-6,1,1,'#1c1c28'); } },
+  { id:'snail',    name:'달팽이',   emoji:'🐌', body:'#d8c48f', dark:'#a89562', ears:'none',  tail:'none',  legs:0, speed:4,  say:'…느긋', sc:.8, extra:(p)=>{ p(-4,-5,6,5,'#c96f3b'); p(-3,-4,4,3,'#e39a5f'); p(-2,-3,2,1,'#c96f3b'); p(6,-7,1,2,'#a89562'); p(8,-7,1,2,'#a89562'); } },
+  { id:'lizard',   name:'도마뱀',   emoji:'🦎', body:'#7bc47f', dark:'#4f8f52', ears:'none',  tail:'cat',   legs:4, speed:34, say:'스윽', sc:.8 },
+  { id:'owl',      name:'부엉이',   emoji:'🦉', body:'#8b6b4e', dark:'#5c4432', ears:'point', tail:'none',  legs:2, speed:22, say:'부엉', fly:true, extra:(p)=>{ p(3,-4,2,2,'#f4d35e'); p(6,-4,2,2,'#f4d35e'); p(4,-4,1,1,'#1c1c28'); p(7,-4,1,1,'#1c1c28'); p(-2,-1,5,3,'#c8a888'); } },
+  { id:'butterfly',name:'나비',     emoji:'🦋', body:'#2b2b33', dark:'#2b2b33', ears:'none',  tail:'none',  legs:0, speed:26, say:'✨', fly:true, sc:.8, wings:['#5ea0f5','#f5a05e'] },
+  { id:'bee',      name:'꿀벌',     emoji:'🐝', body:'#f5c518', dark:'#2b2b33', ears:'none',  tail:'none',  legs:0, speed:40, say:'붕~', fly:true, sc:.65, extra:(p)=>{ p(-2,-2,1,5,'#2b2b33'); p(1,-2,1,5,'#2b2b33'); p(-3,-6,3,3,'#dfe9ff'); p(1,-6,3,3,'#dfe9ff'); } },
+  { id:'tiger',    name:'호랑이',   emoji:'🐯', body:'#ef9a2f', dark:'#2b2b33', ears:'round', tail:'cat',   legs:4, speed:34, say:'어흥', sc:1.25, extra:(p)=>{ p(-3,-2,1,4,'#2b2b33'); p(-1,-2,1,4,'#2b2b33'); p(1,-2,1,4,'#2b2b33'); p(-1,1,4,1,'#f6e9d8'); } },
+  { id:'lion',     name:'사자',     emoji:'🦁', body:'#e0b04a', dark:'#a9782a', ears:'round', tail:'cat',   legs:4, speed:24, say:'크르릉', sc:1.25, extra:(p)=>{ p(2,-7,7,7,'#9a5a1f'); p(3,-5,5,4,'#e0b04a'); } },
+  { id:'elephant', name:'코끼리',   emoji:'🐘', body:'#9aa3b8', dark:'#6b748a', ears:'flop',  tail:'short', legs:4, speed:10, say:'뿌우', sc:1.5, extra:(p)=>{ p(8,-3,1,5,'#9aa3b8'); p(9,1,1,1,'#9aa3b8'); p(1,-5,3,4,'#7f889d'); } },
+  { id:'monkey',   name:'원숭이',   emoji:'🐵', body:'#9c6b3c', dark:'#6a4626', ears:'round', tail:'cat',   legs:4, speed:36, say:'우끼끼', extra:(p)=>{ p(4,-4,3,3,'#e9c9a3'); } },
+];
+const SPECIES_BY_ID = Object.fromEntries(SPECIES.map(s => [s.id, s]));
+const ANIMAL_MAX_EACH = 5;
+let animalConfig = { cat: 1 };                              // { speciesId: count }
+try { const v = JSON.parse(localStorage.getItem('officeAnimals') || 'null'); if (v && typeof v === 'object') animalConfig = v; } catch (e) {}
+function sanitizeAnimalConfig(cfg) {
+  const out = {};
+  for (const sp of SPECIES) { const n = Math.min(ANIMAL_MAX_EACH, Math.max(0, Math.floor(+cfg[sp.id] || 0))); if (n > 0) out[sp.id] = n; }
+  return out;
+}
+animalConfig = sanitizeAnimalConfig(animalConfig);
+
+let animals = [];
+function makeAnimal(sp, i) {
+  const x = 20 + Math.random() * (VW - 40);
+  const y = HCORRIDORS[Math.floor(Math.random() * HCORRIDORS.length)] || 200;
+  return { sp, x, y, tx: x, ty: y, sit: 0, tailT: Math.random() * 10, walkT: 0, seed: hashStr(sp.id + i) };
+}
+function rebuildAnimals() {
+  // 이미 있는 개체는 유지하고, 수가 늘면 추가·줄면 제거 (화면이 갑자기 리셋되지 않도록)
+  const next = [];
+  for (const sp of SPECIES) {
+    const want = animalConfig[sp.id] || 0;
+    const have = animals.filter(a => a.sp === sp);
+    for (let i = 0; i < want; i++) next.push(have[i] || makeAnimal(sp, i));
+  }
+  animals = next;
+}
+rebuildAnimals();
+function animalSummary() {
+  const parts = SPECIES.filter(sp => animalConfig[sp.id]).map(sp => `${sp.emoji}${sp.name} ${animalConfig[sp.id]}`);
+  return parts.length ? parts.join(' · ') : '없음';
+}
+function updateAnimal(a, dt) {
+  a.tailT += dt * 4;
+  if (a.sit > 0) { a.sit -= dt; return; }
+  const dx = a.tx - a.x, dy = a.ty - a.y;
   const dist = Math.hypot(dx, dy);
   if (dist < 2) {
-    if (Math.random() < 0.6) cat.sit = 3 + Math.random() * 5;
-    cat.tx = 20 + Math.random() * (VW - 40);
-    cat.ty = HCORRIDORS[Math.floor(Math.random() * HCORRIDORS.length)] || 200;
-  } else { cat.x += dx / dist * 22 * dt; cat.y += dy / dist * 22 * dt; }
+    if (Math.random() < 0.6) a.sit = 3 + Math.random() * 5;
+    a.tx = 20 + Math.random() * (VW - 40);
+    a.ty = HCORRIDORS[Math.floor(Math.random() * HCORRIDORS.length)] || 200;
+    if (a.sp.fly) a.ty -= 6 + Math.random() * 10;                       // 나는 동물은 복도 위쪽을 떠다님
+  } else {
+    const sp = a.sp.speed * (a.sp.fly ? 1 : 1) * dt;
+    a.x += dx / dist * sp; a.y += dy / dist * sp; a.walkT += dt * 8;
+  }
 }
-
+function updateAnimals(dt) { for (const a of animals) updateAnimal(a, dt); }
 /* ================= 데이터 폴링 ================= */
 let offline = false;
 async function poll() {
@@ -866,11 +969,11 @@ function drawScene(t, dt) {
   drawLinks(t);
 
 
-  // 직원·팀장·고양이 (y 정렬)
+  // 직원·팀장·동물 (y 정렬)
   const drawables = [...workers.values()].filter(w => w.spawnDelay <= 0)
     .map(w => ({ y: w.y, fn: () => (w.isAgent ? drawInternWorker(w, t) : drawWorker(w, t)) }));
   for (const m of MANAGERS) drawables.push({ y: m.y, fn: () => drawWorker(m, t) });
-  drawables.push({ y: cat.y, fn: () => drawCat(t) });
+  for (const a of animals) drawables.push({ y: a.y + (a.sp.fly ? 8 : 0), fn: () => drawAnimal(a, t) });
   drawables.sort((a, b) => a.y - b.y);
   for (const dr of drawables) dr.fn();
 
@@ -1083,20 +1186,42 @@ function drawInternWorker(w, t) {
     ctxTextQueue.push({ x, y: y - 15, text: w.bubbleText, size: 7, bubble: true, align: 'center', avoid: 'up' });
 }
 
-function drawCat(t) {
-  const x = Math.round(cat.x), y = Math.round(cat.y);
-  const sitFrame = cat.sit > 0;
-  ctx.globalAlpha = 0.2; px(x - 4, y + 3, 9, 2, '#000'); ctx.globalAlpha = 1;
-  px(x - 4, y - 2, 9, 5, '#e8a33d');
-  px(x - 4, y - 1, 9, 1, '#c98a2e');
-  px(x + 3, y - 5, 5, 4, '#e8a33d');
-  px(x + 3, y - 7, 2, 2, '#e8a33d'); px(x + 6, y - 7, 2, 2, '#e8a33d');
-  px(x + 4, y - 4, 1, 1, '#1c1c28'); px(x + 6, y - 4, 1, 1, '#1c1c28');
-  const tail = Math.floor(cat.tailT) % 2;
-  px(x - 6, y - 4 - tail, 2, 3 + tail, '#c98a2e');
-  if (!sitFrame) { px(x - 3, y + 3, 1, 2, '#c98a2e'); px(x + 2, y + 3, 1, 2, '#c98a2e'); }
-  if (sitFrame && Math.floor(t) % 6 === 0)
-    ctxTextQueue.push({ x: x + 8, y: y - 9, text: '냐옹', size: 7, color: '#e8a33d', align: 'center', avoid: 'up' });
+function drawAnimal(a, t) {
+  const sp = a.sp, sc = sp.sc || 1;
+  const bobY = sp.fly ? Math.sin(t * 5 + a.seed) * 1.5 : 0;
+  const ox = Math.round(a.x), oy = Math.round(a.y + bobY);
+  const p = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(ox + x * sc), Math.round(oy + y * sc), Math.max(1, Math.round(w * sc)), Math.max(1, Math.round(h * sc))); };
+  const sitting = a.sit > 0;
+  const moving = !sitting;
+  const step = moving ? Math.floor(a.walkT) % 2 : 0;
+  // 그림자
+  ctx.globalAlpha = 0.2; p(-4, sp.fly ? 6 : 3, 9, 2, '#000'); ctx.globalAlpha = 1;
+  // 날개(나비)
+  if (sp.wings) { const f = Math.floor(t * 8) % 2; p(-5, -5 + f, 4, 5 - f, sp.wings[0]); p(1, -5 + f, 4, 5 - f, sp.wings[1]); p(-4, -1, 3, 2, sp.wings[1]); p(1, -1, 3, 2, sp.wings[0]); }
+  // 꼬리
+  const tail = Math.floor(a.tailT) % 2;
+  if (sp.tail === 'cat')   p(-6, -4 - tail, 2, 3 + tail, sp.dark);
+  if (sp.tail === 'short') p(-5, -2, 1, 2, sp.dark);
+  if (sp.tail === 'bushy') p(-8, -5 - tail, 4, 5, sp.dark);
+  if (sp.tail === 'curl')  { p(-6, -4, 2, 2, sp.dark); p(-5, -3 + tail, 1, 2, sp.dark); }
+  // 몸통
+  p(-4, -2, 9, 5, sp.body);
+  p(-4, -1, 9, 1, sp.dark);
+  // 다리
+  if (sp.legs === 4) { p(-3, 3, 1, 2 - (moving ? step : 0), sp.dark); p(2, 3, 1, 2 - (moving ? 1 - step : 0), sp.dark); p(-1, 3, 1, 1 + (moving ? step : 1), sp.dark); p(4, 3, 1, 1 + (moving ? 1 - step : 1), sp.dark); }
+  if (sp.legs === 2) { p(-1, 3, 1, 2 - (moving ? step : 0), sp.dark); p(2, 3, 1, 2 - (moving ? 1 - step : 0), sp.dark); }
+  // 머리
+  p(3, -5, 5, 4, sp.body);
+  // 귀
+  if (sp.ears === 'point') { p(3, -7, 2, 2, sp.body); p(6, -7, 2, 2, sp.body); }
+  if (sp.ears === 'round') { p(2, -7, 2, 2, sp.dark); p(7, -7, 2, 2, sp.dark); }
+  if (sp.ears === 'long')  { p(3, -10, 1, 5, sp.body); p(6, -10, 1, 5, sp.body); }
+  if (sp.ears === 'flop')  { p(2, -5, 1, 3, sp.dark); p(8, -5, 1, 3, sp.dark); }
+  // 눈
+  p(4, -4, 1, 1, '#1c1c28'); p(6, -4, 1, 1, '#1c1c28');
+  if (sp.extra) sp.extra(p);
+  if (sitting && (Math.floor(t) + (a.seed % 6)) % 6 === 0)
+    ctxTextQueue.push({ x: ox + 8 * sc, y: oy - 9 * sc, text: sp.say, size: 7, color: sp.body === '#f4f1ec' || sp.body === '#f7f5f0' || sp.body === '#f5f0dc' ? '#c7cde6' : sp.body, align: 'center', avoid: 'up' });
 }
 
 /* ===== 텍스트 오버레이 (겹침 방지: 같은 높이에 있으면 위/아래로 비켜남) ===== */
@@ -1181,7 +1306,7 @@ function frame(nowMs) {
 
   for (const [, w] of workers) updateWorker(w, dt);
   for (const [id, w] of workers) if (w.dead) workers.delete(id);
-  updateCat(dt);
+  updateAnimals(dt);
   updateBoss(dt);
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1277,6 +1402,7 @@ async function openSettings() {
     document.getElementById('cfgPl').value = c.plName || '';
     document.getElementById('cfgSpeed').value = SPEED_MUL;
     document.getElementById('cfgSpeedVal').textContent = SPEED_MUL.toFixed(2) + '×';
+    document.getElementById('cfgAnimalsSum').textContent = animalSummary();
     document.getElementById('cfgMax').value = c.maxSessions || 12;
     document.getElementById('cfgAgent').value = c.agentActiveSeconds || 120;
     document.getElementById('cfgAge').value = c.sessionMaxAgeDays || 7;
@@ -1340,6 +1466,57 @@ document.getElementById('cfgSpeed').addEventListener('input', ev => {
   try { localStorage.setItem('officeSpeed', String(SPEED_MUL)); } catch (e) {}
 });
 settingsEl.addEventListener('click', ev => { if (ev.target === settingsEl) settingsEl.style.display = 'none'; });
+/* ── 동물 선택 팝업 (고정 높이 체크리스트) ── */
+const apEl = document.getElementById('animalPick');
+let apDraft = {};                                            // 팝업 안에서 편집 중인 { id: count }
+function apRender() {
+  const q = document.getElementById('apSearch').value.trim().toLowerCase();
+  const list = document.getElementById('apList');
+  list.innerHTML = SPECIES.filter(sp => !q || sp.name.includes(q) || sp.id.includes(q)).map(sp => {
+    const n = apDraft[sp.id] || 0;
+    return `<div class="ap-row${n ? ' on' : ''}" data-id="${sp.id}">
+      <input type="checkbox" ${n ? 'checked' : ''}>
+      <span class="nm">${sp.emoji} ${esc(sp.name)}<small>${sp.fly ? '날아다님' : sp.speed <= 8 ? '느릿느릿' : sp.speed >= 34 ? '재빠름' : ''}</small></span>
+      <span class="cnt"><button type="button" data-d="-1">−</button><span>${n}</span><button type="button" data-d="1">+</button></span>
+    </div>`;
+  }).join('') || '<div class="ap-row" style="color:#8b93b5;cursor:default">검색 결과가 없어요</div>';
+  const total = Object.values(apDraft).reduce((a, b) => a + b, 0);
+  const kinds = Object.keys(apDraft).length;
+  document.getElementById('apSum').textContent = total ? `${kinds}종 · 총 ${total}마리` : '선택된 동물 없음';
+}
+document.getElementById('apList').addEventListener('click', ev => {
+  const row = ev.target.closest('.ap-row'); if (!row || !row.dataset.id) return;
+  const id = row.dataset.id, cur = apDraft[id] || 0;
+  const btn = ev.target.closest('button[data-d]');
+  let n;
+  if (btn) n = cur + (+btn.dataset.d);
+  else n = cur ? 0 : 1;                                       // 행 클릭(체크박스 포함) → 토글
+  n = Math.max(0, Math.min(ANIMAL_MAX_EACH, n));
+  if (n) apDraft[id] = n; else delete apDraft[id];
+  apRender();
+});
+document.getElementById('apSearch').addEventListener('input', apRender);
+document.getElementById('apAll').addEventListener('click', () => { for (const sp of SPECIES) apDraft[sp.id] = apDraft[sp.id] || 1; apRender(); });
+document.getElementById('apNone').addEventListener('click', () => { apDraft = {}; apRender(); });
+function openAnimalPick() {
+  apDraft = { ...animalConfig };
+  document.getElementById('apSearch').value = '';
+  apRender();
+  apEl.style.display = 'flex';
+}
+function closeAnimalPick() { apEl.style.display = 'none'; }
+document.getElementById('cfgAnimals').addEventListener('click', openAnimalPick);
+document.getElementById('apClose').addEventListener('click', closeAnimalPick);
+document.getElementById('apCancel').addEventListener('click', closeAnimalPick);
+apEl.addEventListener('click', ev => { if (ev.target === apEl) closeAnimalPick(); });
+document.getElementById('apApply').addEventListener('click', () => {
+  animalConfig = sanitizeAnimalConfig(apDraft);
+  try { localStorage.setItem('officeAnimals', JSON.stringify(animalConfig)); } catch (e) {}
+  rebuildAnimals();
+  document.getElementById('cfgAnimalsSum').textContent = animalSummary();
+  closeAnimalPick();
+});
+
 document.getElementById('cfgSave').addEventListener('click', async () => {
   const body = {
     projectsDir: document.getElementById('cfgDir').value,
