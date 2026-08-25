@@ -32,6 +32,18 @@ Claude Code 세션들을 **2D 픽셀 사무실**로 보여주는 로컬 대시�
 | 세션 표시 기간(일) | 이보다 오래된 세션은 퇴근 처리 | 7 |
 | 포트 | 변경 시 서버 재시작 필요 | 8765 |
 
+### 세션 디렉터리는 어디? (환경별)
+
+Claude Code를 **어디서 쓰는지**와 서버를 **어디서 띄우는지**에 따라 다릅니다. 같은 환경이면 기본값 그대로면 됩니다.
+
+| Claude Code 실행 환경 | 서버 실행 환경 | 설정에 넣을 경로 |
+|---|---|---|
+| Windows | Windows `run.bat` | `%USERPROFILE%\.claude\projects` (기본값 OK) |
+| WSL | WSL `./run.sh` | `~/.claude/projects` (기본값 OK) |
+| WSL | Windows `run.bat` | `\\wsl.localhost\Ubuntu\home\<리눅스계정>\.claude\projects` (배포판 이름은 `wsl -l`, 구버전은 `\\wsl$\Ubuntu\...`) |
+| Windows | WSL `./run.sh` | `/mnt/c/Users/<윈도우계정>/.claude/projects` |
+| macOS / Linux | 같은 환경 | `~/.claude/projects` (기본값 OK) |
+
 설정은 `server.py` 옆 `config.json`에 저장됩니다 (`config.example.json` 참고). 이 파일을 직접 편집해도 됩니다.
 HUD에 **"⚠ 세션 디렉터리를 찾을 수 없어요"** 가 뜨면 경로가 틀린 것입니다.
 

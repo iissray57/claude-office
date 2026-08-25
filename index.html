@@ -96,7 +96,7 @@
     <div class="desc">개인 PC 환경에 맞게 경로와 이름을 지정하세요. 저장하면 서버 옆 <code id="cfgPath">config.json</code>에 기록되어 다음 실행에도 유지됩니다.</div>
     <label>클로드 세션 디렉터리 (Claude Code 트랜스크립트 위치)</label>
     <input id="cfgDir" placeholder="~/.claude/projects" spellcheck="false">
-    <div class="note" id="cfgDirNote">보통 <code>~/.claude/projects</code> (Windows: <code>%USERPROFILE%\.claude\projects</code>) 입니다. <code>~</code>, 환경변수 사용 가능.</div>
+    <div class="note" id="cfgDirNote">같은 환경이면 기본값 그대로. 엇갈리면 — WSL 세션을 Windows에서: <code>\\wsl.localhost\Ubuntu\home\계정\.claude\projects</code> · Windows 세션을 WSL에서: <code>/mnt/c/Users/계정/.claude/projects</code></div>
     <div class="grid">
       <div><label>총괄 팀장 이름 (본인)</label><input id="cfgName" placeholder="홍길동" maxlength="20"></div>
       <div><label>PM 이름</label><input id="cfgPm" placeholder="PM" maxlength="20"></div>
