@@ -1,0 +1,8 @@
+{
+  "projectsDir": "~/.claude/projects",
+  "managerName": "홍길동",
+  "port": 8765,
+  "maxSessions": 12,
+  "agentActiveSeconds": 120,
+  "sessionMaxAgeDays": 7
+}
