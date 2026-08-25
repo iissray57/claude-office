@@ -567,6 +567,115 @@ def _payload():
     return body
 
 
+# ───────────────────────── 폴더 탐색 (설정창 경로 선택용) ─────────────────────────
+def _looks_like_projects(d):
+    """Claude 세션 디렉터리처럼 보이는가: 하위 폴더 안에 *.jsonl 이 있다."""
+    try:
+        n = 0
+        for sub in d.iterdir():
+            if sub.is_dir() and any(sub.glob("*.jsonl")):
+                return True
+            n += 1
+            if n > 200:
+                break
+    except OSError:
+        pass
+    return False
+
+
+def _candidates():
+    """환경별로 있을 법한 세션 디렉터리를 자동 탐지한다."""
+    found = []
+    def add(pth, label):
+        try:
+            p = Path(pth)
+            if p.is_dir() and str(p) not in [f["path"] for f in found]:
+                found.append({"path": str(p), "label": label, "ok": _looks_like_projects(p)})
+        except OSError:
+            pass
+    add(Path.home() / ".claude" / "projects", "이 환경의 홈")
+    if os.name == "nt":
+        # Windows: WSL 배포판 안의 홈들
+        try:
+            import subprocess
+            out = subprocess.run(["wsl", "-l", "-q"], capture_output=True, timeout=5).stdout
+            for distro in out.decode("utf-16-le", errors="ignore").replace("\x00", "").splitlines():
+                distro = distro.strip()
+                if not distro:
+                    continue
+                for base in (f"\\\\wsl.localhost\\{distro}\\home", f"\\\\wsl$\\{distro}\\home"):
+                    try:
+                        for user in Path(base).iterdir():
+                            add(user / ".claude" / "projects", f"WSL {distro} · {user.name}")
+                    except OSError:
+                        continue
+        except Exception:
+            pass
+        for user in Path("C:/Users").glob("*"):
+            add(user / ".claude" / "projects", f"Windows · {user.name}")
+    else:
+        # Linux/WSL: 마운트된 Windows 드라이브의 사용자 홈들
+        for mnt in Path("/mnt").glob("*"):
+            try:
+                for user in (mnt / "Users").iterdir():
+                    add(user / ".claude" / "projects", f"Windows {mnt.name.upper()}: · {user.name}")
+            except OSError:
+                continue
+        for user in Path("/home").glob("*"):
+            add(user / ".claude" / "projects", f"Linux · {user.name}")
+        for user in Path("/Users").glob("*"):
+            add(user / ".claude" / "projects", f"macOS · {user.name}")
+    return found
+
+
+def _roots():
+    roots = [{"path": str(Path.home()), "label": "🏠 홈"}]
+    if os.name == "nt":
+        import string
+        for letter in string.ascii_uppercase:
+            d = f"{letter}:\\"
+            if os.path.exists(d):
+                roots.append({"path": d, "label": f"💽 {letter}:"})
+    else:
+        roots.append({"path": "/", "label": "💽 /"})
+        for mnt in sorted(Path("/mnt").glob("*")):
+            if mnt.is_dir() and len(mnt.name) == 1:   # /mnt/c 같은 드라이브만
+                roots.append({"path": str(mnt), "label": f"🪟 {mnt.name.upper()}: (Windows)"})
+    return roots
+
+
+def _browse(raw):
+    raw = (raw or "").strip()
+    if not raw:
+        return {"path": None, "parent": None, "dirs": [], "roots": _roots(), "candidates": _candidates()}
+    p = Path(os.path.expandvars(os.path.expanduser(raw)))
+    try:
+        p = p.resolve()
+    except Exception:
+        pass
+    if not p.is_dir():
+        return {"path": str(p), "error": "폴더가 없습니다", "parent": str(p.parent) if p.parent != p else None,
+                "dirs": [], "roots": _roots(), "candidates": []}
+    dirs = []
+    try:
+        for sub in sorted(p.iterdir(), key=lambda x: x.name.lower()):
+            try:
+                if not sub.is_dir():
+                    continue
+                if sub.name.startswith(".") and sub.name != ".claude":
+                    continue
+                dirs.append({"name": sub.name, "path": str(sub)})
+            except OSError:
+                continue
+            if len(dirs) >= 400:
+                break
+    except OSError as exc:
+        return {"path": str(p), "error": str(exc), "parent": str(p.parent) if p.parent != p else None,
+                "dirs": [], "roots": _roots(), "candidates": []}
+    return {"path": str(p), "parent": str(p.parent) if p.parent != p else None, "dirs": dirs,
+            "isProjects": _looks_like_projects(p), "roots": _roots(), "candidates": []}
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send(self, code, ctype, body):
         self.send_response(code)
@@ -583,6 +692,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, "text/html; charset=utf-8", body)
             elif self.path.startswith("/api/sessions"):
                 self._send(200, "application/json; charset=utf-8", _payload())
+            elif self.path.startswith("/api/browse"):
+                from urllib.parse import urlparse, parse_qs
+                q = parse_qs(urlparse(self.path).query)
+                data = _browse((q.get("path") or [""])[0])
+                self._send(200, "application/json; charset=utf-8", json.dumps(data, ensure_ascii=False).encode("utf-8"))
             elif self.path.startswith("/api/config"):
                 body = dict(CONFIG)
                 body["_configPath"] = str(CONFIG_PATH)

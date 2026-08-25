@@ -23,7 +23,7 @@ Claude Code 세션들을 **2D 픽셀 사무실**로 보여주는 로컬 대시�
 
 | 항목 | 설명 | 기본값 |
 |---|---|---|
-| 클로드 세션 디렉터리 | Claude Code가 트랜스크립트를 쌓는 곳. `~`·환경변수 사용 가능 | `~/.claude/projects` (Windows: `%USERPROFILE%\.claude\projects`) |
+| 클로드 세션 디렉터리 | Claude Code가 트랜스크립트를 쌓는 곳. **📂 찾아보기**를 누르면 자동 탐지된 후보(WSL/Windows 홈)가 뜨고 폴더를 골라 넣을 수 있음. `~`·환경변수 사용 가능 | `~/.claude/projects` (Windows: `%USERPROFILE%\.claude\projects`) |
 | 총괄 팀장 이름 | 관리동 팀장석에 표시되는 **본인 이름** | 총괄 팀장 |
 | PM 이름 / PL 이름 | 관리동 PM석·PL석 캐릭터 이름 | PM / PL |
 | 이동 속도 | 직원·관리자 걷는 속도 배율 0.25×~4× (브라우저에만 저장) | 1× |

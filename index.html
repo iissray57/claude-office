@@ -61,7 +61,7 @@
   #gear:hover { background:#1c2140; }
   #warn { display:none; font-size:12px; color:#0b0d17; background:#facc15; padding:3px 8px; border-radius:4px; }
   #settings { position:fixed; inset:0; z-index:30; display:none; background:rgba(5,6,12,.7); align-items:center; justify-content:center; }
-  #settings .box { width:min(560px, 92vw); background:#141830; border:1px solid #2c3154; border-radius:12px; padding:20px 22px; color:#e6e8f0;
+  #settings .box { width:min(560px, 92vw); max-height:92vh; overflow-y:auto; background:#141830; border:1px solid #2c3154; border-radius:12px; padding:20px 22px; color:#e6e8f0;
     box-shadow:0 12px 40px rgba(0,0,0,.6); }
   #settings h2 { font-size:16px; margin-bottom:4px; }
   #settings .desc { font-size:12px; color:#8b93b5; margin-bottom:14px; line-height:1.5; }
@@ -75,6 +75,23 @@
   #settings button { border:none; border-radius:6px; padding:8px 14px; font-size:13px; cursor:pointer; }
   #settings .save { background:#4f83e0; color:#fff; font-weight:700; } #settings .cancel { background:#2c3154; color:#e6e8f0; }
   #settings code { background:#0f1222; padding:1px 5px; border-radius:4px; font-size:11px; }
+  #picker { display:none; margin-top:8px; border:1px solid #2c3154; border-radius:8px; background:#0f1222; font-size:12px; }
+  #picker .pk-head { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border-bottom:1px solid #2c3154; color:#aab3d6; font-weight:700; }
+  #picker .pk-head button { background:none; border:none; color:#8b93b5; cursor:pointer; font-size:14px; padding:0; }
+  #picker .pk-cands { padding:6px 10px; border-bottom:1px solid #2c3154; }
+  #picker .pk-cands .c { display:flex; gap:8px; align-items:center; padding:4px 6px; border-radius:5px; cursor:pointer; }
+  #picker .pk-cands .c:hover { background:#1c2140; }
+  #picker .pk-cands .c code { color:#e6e8f0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #picker .pk-cands .c .lb { color:#8b93b5; white-space:nowrap; }
+  #picker .pk-roots { display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; }
+  #picker .pk-roots button { background:#1c2140; color:#c7cde6; border:1px solid #2c3154; border-radius:5px; padding:3px 8px; font-size:11.5px; cursor:pointer; }
+  #picker .pk-path { padding:4px 10px; color:#8fd3ff; font-family:monospace; font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #picker .pk-list { max-height:180px; overflow-y:auto; border-top:1px solid #2c3154; border-bottom:1px solid #2c3154; }
+  #picker .pk-list div { padding:4px 12px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #picker .pk-list div:hover { background:#1c2140; }
+  #picker .pk-list .up { color:#8b93b5; }
+  #picker .pk-foot { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; gap:8px; }
+  #picker .pk-foot #pkNote { font-size:11px; color:#8b93b5; } #picker .pk-foot #pkNote.good { color:#4ade80; }
   #hint { position:fixed; bottom:6px; left:0; right:0; text-align:center; font-size:11px; color:#59617f; z-index:10; pointer-events:none; }
 </style>
 </head>
@@ -95,7 +112,15 @@
     <h2>⚙ Claude Office 설정</h2>
     <div class="desc">개인 PC 환경에 맞게 경로와 이름을 지정하세요. 저장하면 서버 옆 <code id="cfgPath">config.json</code>에 기록되어 다음 실행에도 유지됩니다.</div>
     <label>클로드 세션 디렉터리 (Claude Code 트랜스크립트 위치)</label>
-    <input id="cfgDir" placeholder="~/.claude/projects" spellcheck="false">
+    <div style="display:flex;gap:6px"><input id="cfgDir" placeholder="~/.claude/projects" spellcheck="false" style="flex:1"><button type="button" id="cfgBrowse" class="cancel" style="white-space:nowrap">📂 찾아보기</button></div>
+    <div id="picker">
+      <div class="pk-head"><span>📂 폴더 선택</span><button type="button" id="pkClose">✕</button></div>
+      <div class="pk-cands" id="pkCands"></div>
+      <div class="pk-roots" id="pkRoots"></div>
+      <div class="pk-path" id="pkPath"></div>
+      <div class="pk-list" id="pkList"></div>
+      <div class="pk-foot"><span id="pkNote"></span><button type="button" id="pkPick" class="save">이 폴더 선택</button></div>
+    </div>
     <div class="note" id="cfgDirNote">같은 환경이면 기본값 그대로. 엇갈리면 — WSL 세션을 Windows에서: <code>\\wsl.localhost\Ubuntu\home\계정\.claude\projects</code> · Windows 세션을 WSL에서: <code>/mnt/c/Users/계정/.claude/projects</code></div>
     <div class="grid">
       <div><label>총괄 팀장 이름 (본인)</label><input id="cfgName" placeholder="홍길동" maxlength="20"></div>
@@ -1266,6 +1291,48 @@ async function openSettings() {
   settingsEl.style.display = 'flex';
 }
 document.getElementById('gear').addEventListener('click', openSettings);
+
+/* ── 폴더 선택 팝업 (서버가 로컬이므로 서버 쪽 파일시스템을 탐색) ── */
+const pickerEl = document.getElementById('picker');
+let pkCurrent = null;
+async function pkBrowse(path) {
+  const r = await (await fetch('/api/browse?path=' + encodeURIComponent(path || ''), { cache: 'no-store' })).json();
+  pkCurrent = r.path;
+  const cands = document.getElementById('pkCands');
+  if (r.candidates && r.candidates.length) {
+    cands.style.display = 'block';
+    cands.innerHTML = '<div style="color:#aab3d6;margin-bottom:3px">🔍 자동으로 찾은 세션 디렉터리 — 클릭하면 바로 선택</div>' +
+      r.candidates.map(c => `<div class="c" data-path="${esc(c.path)}"><span>${c.ok ? '✔' : '📁'}</span><code>${esc(c.path)}</code><span class="lb">${esc(c.label)}</span></div>`).join('');
+    cands.querySelectorAll('.c').forEach(el => el.addEventListener('click', () => pkChoose(el.dataset.path)));
+  } else if (!r.path) cands.style.display = 'none';
+  document.getElementById('pkRoots').innerHTML = (r.roots || []).map(x => `<button type="button" data-path="${esc(x.path)}">${esc(x.label)}</button>`).join('');
+  document.getElementById('pkRoots').querySelectorAll('button').forEach(b => b.addEventListener('click', () => pkBrowse(b.dataset.path)));
+  document.getElementById('pkPath').textContent = r.path || '(위에서 시작 위치를 고르세요)';
+  const list = document.getElementById('pkList');
+  let html = '';
+  if (r.parent) html += `<div class="up" data-path="${esc(r.parent)}">⬆ ..</div>`;
+  if (r.error) html += `<div class="up">⚠ ${esc(r.error)}</div>`;
+  html += (r.dirs || []).map(d => `<div data-path="${esc(d.path)}">📁 ${esc(d.name)}</div>`).join('');
+  if (r.path && !r.error && !(r.dirs || []).length) html += '<div class="up">(하위 폴더 없음)</div>';
+  list.innerHTML = html;
+  list.querySelectorAll('div[data-path]').forEach(el => el.addEventListener('click', () => pkBrowse(el.dataset.path)));
+  const note = document.getElementById('pkNote');
+  note.className = r.isProjects ? 'good' : '';
+  note.textContent = r.path ? (r.isProjects ? '✔ 클로드 세션 디렉터리로 보입니다' : '이 폴더 안에 세션(*.jsonl)이 보이지 않아요') : '';
+  document.getElementById('pkPick').disabled = !r.path;
+}
+function pkChoose(path) {
+  document.getElementById('cfgDir').value = path;
+  pickerEl.style.display = 'none';
+}
+document.getElementById('cfgBrowse').addEventListener('click', () => {
+  pickerEl.style.display = 'block';
+  pkBrowse('');                                    // 후보 + 루트
+  const cur = document.getElementById('cfgDir').value.trim();
+  if (cur) pkBrowse(cur).catch(() => {});
+});
+document.getElementById('pkClose').addEventListener('click', () => pickerEl.style.display = 'none');
+document.getElementById('pkPick').addEventListener('click', () => { if (pkCurrent) pkChoose(pkCurrent); });
 document.getElementById('cfgCancel').addEventListener('click', () => settingsEl.style.display = 'none');
 document.getElementById('cfgSpeed').addEventListener('input', ev => {
   SPEED_MUL = +ev.target.value || 1;
